@@ -1,0 +1,15 @@
+■ 開発環境
+ESP32-S3-DEVKITC-1-N8R8
+・8MBフラッシュ、8MB PSRAM搭載モデル
+・ESP32-S トランシーバ;802.11 b/g/n（Wi-Fi、WiFi、WLAN）、Bluetooth® 5.x（BLE） 2.4GHz 評価ボード
+・ESP32-S3-DevKitC-1
+https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+
+■ PlatformIO 書き込みコマンド
+・File System
+platformio run --target uploadfs
+・Farmware
+platformio run --target upload
+
+■ 接続
+ESP32 + WebSocket + LittleFS + PWA + iPhone Safari 

@@ -1,0 +1,20 @@
+{
+  "name": "IPSアプリケーション",
+  "short_name": "IPS App",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "img/NmbIcon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/NmbIcon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

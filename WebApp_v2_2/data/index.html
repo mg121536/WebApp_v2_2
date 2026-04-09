@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Inductive Sensor Application by MinebeaMitsumi">
+    <meta name="theme-color" content="#ffffff">
+
+    <title>IPS Application | MinebeaMitsumi</title>
+
+    <link rel="icon" href="img/NmbIcon.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="img/NmbIcon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script>
+        if (location.pathname !== '/' && location.pathname.startsWith('/index')) {
+            location.replace('/');
+        }
+    </script>
+</head>
+
+<body>
+    <!-- header -->
+    <header>
+        <div id="leftHeader">
+            <img id="logo" src="img/Nmb.png" alt="MinebeaMitsumiのロゴ">
+            <h1>IPS Application</h1>
+        </div>
+        <div id="rightHeader">
+            <div id="graphOptions">
+                <label><input type="checkbox" id="sinCheckbox" checked onchange="toggleGraph()"> Sin</label>
+                <label><input type="checkbox" id="cosCheckbox" checked onchange="toggleGraph()"> Cos</label>
+                <label><input type="checkbox" id="sinNCheckbox" checked onchange="toggleGraph()"> SinN</label>
+                <label><input type="checkbox" id="cosNCheckbox" checked onchange="toggleGraph()"> CosN</label>
+            </div>
+            <div id="topButtons">
+                <button id="reloadButton" aria-label="リロード" title="リロード">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true" role="img">
+                        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6a6.003 6.003 0 0 1-5.659-4H5.06c.51 4.01 3.92 7 7.94 7 4.42 0 8-3.58 8-8s-3.58-8-8-8z"/>
+                    </svg>
+                </button>
+                <button id="settingsIconButton" aria-label="設定" title="設定">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true" role="img">
+                        <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.63l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.007 7.007 0 0 0-1.6-.94l-.36-2.54a.5.5 0 0 0-.5-.43h-3.84a.5.5 0 0 0-.5.43l-.36 2.54a7.007 7.007 0 0 0-1.6.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 9.85a.5.5 0 0 0 .12.63l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.63l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.38 1.04.7 1.6.94l.36 2.54c.04.22.22.38.5.38h3.84c.28 0 .46-.16.5-.38l.36-2.54c.56-.24 1.1-.56 1.6-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.63l-2.03-1.58zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- main -->
+    <main>
+        <div id="mainLayout">
+            <!-- Canvas Area -->
+            <div id="canvasContainer" style="width: 100vw; height: 100vh; margin: 0; padding: 0;">
+                <div id="canvas" class="canvas-group" style="width: 100%; height: 100%;">
+                    <canvas id="canvasAll"></canvas>
+                    <canvas id="canvasGraph"></canvas>
+                    <canvas id="canvasAngle"></canvas>
+                </div>
+            </div>
+            <div id="canvasContainer">
+                <div id="canvas" class="canvas-group" style="width: 100%; height: 100%;">
+                    <canvas id="canvasAll"></canvas>
+                    <canvas id="canvasGraph"></canvas>
+                    <canvas id="canvasAngle"></canvas>
+                </div>
+            </div>
+            <!-- console Area -->
+            <div id="consoleContainer" style="display: none;">
+                <h3 class="console-title">Console</h3>
+                <pre id="consoleLog" class="log-box"></pre>
+            </div>
+            <!-- Calibration Area -->
+            <div id="settings-view" style="display: none;">
+                <div id="calibration-container">
+                    <section class="calibration-graph">
+                        <h2>Calibration</h2>
+                        <!-- Sin slider -->
+                        <fieldset class="section calibration-slider-group">
+                            <legend>[Sin]</legend>
+                            <div class="slider-group">
+                                <div class="slider-control">
+                                    <label for="sinMax">Max.</label>
+                                    <input type="number" id="sin-max-secondary" min="0" max="5000" value="3300" step="10"><span class="unit">[mV]</span>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="sinMax" min="0" max="5000" value="3300" step="10">
+                                        <div class="slider-label-minmax">
+                                            <span class="slider-label-min">0</span>
+                                            <span class="slider-label-max">5000</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slider-control">
+                                    <label for="sinMin">Min.</label>
+                                    <input type="number" id="sin-min-secondary" min="0" max="5000" value="0" step="10"><span class="unit">[mV]</span>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="sinMin" min="0" max="5000" value="0" step="10">
+                                        <div class="slider-label-minmax">
+                                            <span class="slider-label-min">0</span>
+                                            <span class="slider-label-max">5000</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <!-- Cos slider -->
+                        <fieldset class="section calibration-slider-group">
+                            <legend>[Cos]</legend>
+                            <div class="slider-group">
+                                <div class="slider-control">
+                                    <label for="cosMax">Max.</label>
+                                    <input type="number" id="cos-max-secondary" min="0" max="5000" value="3300" step="10"><span class="unit">[mV]</span>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="cosMax" min="0" max="5000" value="3300" step="10">
+                                        <div class="slider-label-minmax">
+                                            <span class="slider-label-min">0</span>
+                                            <span class="slider-label-max">5000</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slider-control">
+                                    <label for="cosMin">Min.</label>
+                                    <input type="number" id="cos-min-secondary" min="0" max="5000" value="0" step="10"><span class="unit">[mV]</span>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="cosMin" min="0" max="5000" value="0" step="10">
+                                        <div class="slider-label-minmax">
+                                            <span class="slider-label-min">0</span>
+                                            <span class="slider-label-max">5000</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <!-- Canvas view -->
+                        <fieldset class="section calibration-slider-group">
+                            <legend>[Ch.0] Sin / [Ch.1] Cos</legend>
+                            <div class="canvas-container">
+                                <canvas id="waveform-canvas" width=400 height=300></canvas>
+                            </div>
+                        </fieldset>
+                    </section>
+                    <!-- Direct settings -->
+                    <section class="settings-panel">
+                        <!-- Axis double angle settings -->
+                        <fieldset class="section input-settings-group">
+                            <legend>[General]</legend>
+                            <div class="section axis-double-angle">
+                                <label for="double-angle-multiplier">Axis Double Angle</label>
+                                <select id="double-angle-multiplier">
+                                    <option value="1">2X</option>
+                                    <option value="2">3X</option>
+                                    <option value="3">4X</option>
+                                    <option value="4">5X</option>
+                                    <option value="5">6X</option>
+                                    <option value="6">7X</option>
+                                </select>
+                            </div>
+                        </fieldset>
+
+                        <!-- Sin settings -->
+                        <fieldset class="section input-settings-group">
+                            <legend>[Ch.0] Sin</legend>
+                            <div class="input-row">
+                                <label for="sin-acquired-max">Actual Maximum</label>
+                                <input type="number" id="sin-acquired-max" value="0"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="sin-max">Maximum</label>
+                                <input type="number" id="sin-max_input" value="3300"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="sin-min">Minimum</label>
+                                <input type="number" id="sin-min_input" value="0"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="sin-acquired-min">Actual Minimum</label>
+                                <input type="number" id="sin-acquired-min" value="0"><span class="unit">[mV]</span>
+                            </div>
+                        </fieldset>
+
+                        <!-- Cos settings -->
+                        <fieldset class="section input-settings-group">
+                            <legend>[Ch.1] Cos</legend>
+                            <div class="input-row">
+                                <label for="cos-acquired-max">Actual Maximum</label>
+                                <input type="number" id="cos-acquired-max" value="0"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="cos-max">Maximum</label>
+                                <input type="number" id="cos-max_input" value="3300"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="cos-min">Minimum</label>
+                                <input type="number" id="cos-min_input" value="0"><span class="unit">[mV]</span>
+                            </div>
+                            <div class="input-row">
+                                <label for="cos-acquired-min">Actual Minimum</label>
+                                <input type="number" id="cos-acquired-min" value="0"><span class="unit">[mV]</span>
+                            </div>
+                        </fieldset>
+
+                        <div class="section settings-buttons">
+                            <button id="save-settings">💾 Settings/Save</button>
+                            <button id="reset-settings">♻️ Initialization</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- toolbar -->
+            <div id="toolbar">
+                <div id="controls">
+                    <button id="control_start" onclick="toggleStartButton()">START</button>
+                </div>
+                <div id="tabs">
+                    <button id="tab_all" onclick="setActiveTab('all')" title="Display analog waveform and angle">All</button>
+                    <button id="tab_graph" onclick="setActiveTab('graph')" title="Display analog waveform">Analog</button>
+                    <button id="tab_angle" onclick="setActiveTab('angle')" title="Display angle">Angle</button>
+                    <button id="tab_console" onclick="setActiveTab('console')" title="Display console log">Console</button>
+                    <button id="tab_settings" onclick="setActiveTab('settings')" title="Display settings">Settings</button>
+            </div>
+        </div>
+        <section id="settingsModal" class="modal" tabindex="-1" onclick="closeSettings(event)">
+            <div class="modal-content" onclick="event.stopPropagation();">
+                <span class="close" onclick="closeSettings(event)">&times;</span>
+                <h2>設定</h2>
+                <div class="form-row">
+                    <label for="product">製品:</label>
+                    <select id="product" onchange="updateApplication()" onclick="event.stopPropagation();">
+                <option value="IPS2550">IPS (IPS2550)</option>
+                <option value="RAA2P3500">VIR (RAA2P3500)</option>
+                </select>
+                </div>
+                <div class="form-row">
+                    <label for="device">デバイス:</label>
+                    <select id="device" onclick="event.stopPropagation();">
+                <option value="iPhone">iPad/iPhone</option>
+                <option value="Android">Android</option>
+                <option value="Windows">Windows</option>
+                </select>
+                </div>
+                <div class="form-row">
+                    <label for="connection">接続:</label>
+                    <select id="connection" onclick="event.stopPropagation();">
+                <option value="wifi">無線(Wi-Fi)</option>
+                <option value="wired">有線(USB)</option>
+                </select>
+                </div>
+                <button class="finish-button" onclick="closeSettings(event)">完了</button>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <address>© 2000-2025 MinebeaMitsumi Inc.</address>
+    </footer>
+
+    <!-- Load script -->
+    <script src="js/log.js" defer></script>
+    <script src="js/init.js" defer></script>
+    <script src="js/ui-control.js" defer></script>
+    <!-- <script src="js/resize.js" defer></script> -->
+    <script src="js/graph.js" defer></script>
+    <script src="js/calibration.js" defer></script>
+    <!-- <script src="js/serial.js" defer></script> -->
+    <!-- <script src="js/serial_mock.js" defer></script> -->
+    <!-- <script src="js/websocket.js" defer></script> -->
+    <script src="js/websocket_mock.js" defer></script>
+    <!-- Service Worker -->
+    <!-- <script src="register-sw.js" defer></script> -->
+</body>
+
+</html>
