@@ -1,7 +1,6 @@
 /******************************************************************************
  *  File: IPS_Debug.h
- *  Description: Debug log macros with multi-core safety using Mutex.
- *               Do NOT call LOG_xxx from ISR context.
+ *  Description: IPS Angle Calc (Core 0) + WebSocket Server (Core 1)
  *  Target: ESP32-S3-DEV-KIT-N16R8-M
  *  Date: 2026/XX/XX
  *  License: MinebeaMitsumi Inc.
