@@ -3,22 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Inductive Sensor Application by MinebeaMitsumi">
     <meta name="theme-color" content="#ffffff">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <title>IPS Application | MinebeaMitsumi</title>
 
     <link rel="icon" href="img/NmbIcon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="img/NmbIcon.png">
-    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/style.css">
-
-    <script>
-        if (location.pathname !== '/' && location.pathname.startsWith('/index')) {
-            location.replace('/');
-        }
-    </script>
 </head>
 
 <body>
@@ -159,7 +155,6 @@
                             </div>
                         </fieldset>
 
-                        <!-- Sin settings -->
                         <fieldset class="section input-settings-group">
                             <legend>[Ch.0] Sin</legend>
                             <div class="input-row">
@@ -167,12 +162,12 @@
                                 <input type="number" id="sin-acquired-max" value="0"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
-                                <label for="sin-max">Maximum</label>
-                                <input type="number" id="sin-max_input" value="3300"><span class="unit">[mV]</span>
+                                <label for="sin-max-input">Maximum</label>
+                                <input type="number" id="sin-max-input" value="3300"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
-                                <label for="sin-min">Minimum</label>
-                                <input type="number" id="sin-min_input" value="0"><span class="unit">[mV]</span>
+                                <label for="sin-min-input">Minimum</label>
+                                <input type="number" id="sin-min-input" value="0"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
                                 <label for="sin-acquired-min">Actual Minimum</label>
@@ -180,7 +175,6 @@
                             </div>
                         </fieldset>
 
-                        <!-- Cos settings -->
                         <fieldset class="section input-settings-group">
                             <legend>[Ch.1] Cos</legend>
                             <div class="input-row">
@@ -188,12 +182,12 @@
                                 <input type="number" id="cos-acquired-max" value="0"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
-                                <label for="cos-max">Maximum</label>
-                                <input type="number" id="cos-max_input" value="3300"><span class="unit">[mV]</span>
+                                <label for="cos-max-input">Maximum</label>
+                                <input type="number" id="cos-max-input" value="3300"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
-                                <label for="cos-min">Minimum</label>
-                                <input type="number" id="cos-min_input" value="0"><span class="unit">[mV]</span>
+                                <label for="cos-min-input">Minimum</label>
+                                <input type="number" id="cos-min-input" value="0"><span class="unit">[mV]</span>
                             </div>
                             <div class="input-row">
                                 <label for="cos-acquired-min">Actual Minimum</label>
@@ -214,11 +208,11 @@
                     <button id="control_start" onclick="toggleStartButton()">START</button>
                 </div>
                 <div id="tabs">
-                    <button id="tab_all" onclick="setActiveTab('all')" title="Display analog waveform and angle">All</button>
-                    <button id="tab_graph" onclick="setActiveTab('graph')" title="Display analog waveform">Analog</button>
-                    <button id="tab_angle" onclick="setActiveTab('angle')" title="Display angle">Angle</button>
-                    <button id="tab_console" onclick="setActiveTab('console')" title="Display console log">Console</button>
-                    <button id="tab_settings" onclick="setActiveTab('settings')" title="Display settings">Settings</button>
+                    <button id="tab_all" onclick="setActiveTab('all')" title="Sin, Cos, SinN, CosN waveforms">Single&#8209;ended signal</button>
+                    <button id="tab_graph" onclick="setActiveTab('graph')" title="Vsin, Vcos waveforms">Differential signal</button>
+                    <button id="tab_angle" onclick="setActiveTab('angle')" title="Angle display">Angle</button>
+                    <button id="tab_console" onclick="setActiveTab('console')" title="Raw IC data (Sin, Cos, SinN, CosN)">Console</button>
+                    <button id="tab_settings" onclick="setActiveTab('settings')" title="App settings">Settings</button>
             </div>
         </div>
         <section id="settingsModal" class="modal" tabindex="-1" onclick="closeSettings(event)">
@@ -259,15 +253,10 @@
     <script src="js/log.js" defer></script>
     <script src="js/init.js" defer></script>
     <script src="js/ui-control.js" defer></script>
-    <!-- <script src="js/resize.js" defer></script> -->
     <script src="js/graph.js" defer></script>
     <script src="js/calibration.js" defer></script>
-    <!-- <script src="js/serial.js" defer></script> -->
-    <!-- <script src="js/serial_mock.js" defer></script> -->
     <!-- <script src="js/websocket.js" defer></script> -->
     <script src="js/websocket_mock.js" defer></script>
-    <!-- Service Worker -->
-    <!-- <script src="register-sw.js" defer></script> -->
 </body>
 
 </html>
