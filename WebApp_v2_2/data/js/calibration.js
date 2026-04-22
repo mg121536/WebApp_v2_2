@@ -150,7 +150,7 @@ function drawYAxisMarkers() {
 }
 
 // ■  SIN/COSの波形本体を描画
-function drawSignal(max, min, phaseDeg, color, label) {
+function drawSignal(max, min, phaseDeg, color) {
   const center = (max + min) / 2;
   const amplitudeTop = max - center;
   const amplitudeBottom = center - min;
@@ -194,15 +194,15 @@ function drawSignal(max, min, phaseDeg, color, label) {
 // UI連動・更新
 // ■ 入力値をもとに波形を再描画
 function updateWaveform() {
-  sinMax = parseInt(document.getElementById('sinMax').value);
-  sinMin = parseInt(document.getElementById('sinMin').value);
-  cosMax = parseInt(document.getElementById('cosMax').value);
-  cosMin = parseInt(document.getElementById('cosMin').value);
+  sinMax = parseInt(document.getElementById('sinMax').value) || 0;
+  sinMin = parseInt(document.getElementById('sinMin').value) || 0;
+  cosMax = parseInt(document.getElementById('cosMax').value) || 0;
+  cosMin = parseInt(document.getElementById('cosMin').value) || 0;
 
-  const sinMaxInput = document.getElementById('sin_max_input');
-  const sinMinInput = document.getElementById('sin_min_input');
-  const cosMaxInput = document.getElementById('cos_max_input');
-  const cosMinInput = document.getElementById('cos_min_input');
+  const sinMaxInput = document.getElementById('sin-max-input');
+  const sinMinInput = document.getElementById('sin-min-input');
+  const cosMaxInput = document.getElementById('cos-max-input');
+  const cosMinInput = document.getElementById('cos-min-input');
 
   if (sinMaxInput) sinMaxInput.value = sinMax;
   if (sinMinInput) sinMinInput.value = sinMin;
@@ -235,9 +235,10 @@ function addSyncBehavior(rangeId, inputId, callback) {
 // 設定保存・初期化・復元
 const settingIds = [
   'sinMax', 'sinMin', 'cosMax', 'cosMin',
-  'sin_max_input', 'sin_min_input', 'cos_max_input', 'cos_min_input',
-  'sin_acquired_max_input', 'sin_acquired_min_input',
-  'cos_acquired_max_input', 'cos_acquired_min_input',
+  'sin-max-input', 'sin-min-input', 'cos-max-input', 'cos-min-input',
+  'sin-max-secondary', 'sin-min-secondary', 'cos-max-secondary', 'cos-min-secondary',
+  'sin-acquired-max', 'sin-acquired-min',
+  'cos-acquired-max', 'cos-acquired-min',
   'polePairs'
 ];
 
@@ -281,27 +282,25 @@ window.addEventListener('DOMContentLoaded', () => {
   updateWaveform();
 });
 
-// 同期設定
-addSyncBehavior('sinMax', 'sin_max_input', updateWaveform);
-addSyncBehavior('sinMin', 'sin_min_input', updateWaveform);
-addSyncBehavior('cosMax', 'cos_max_input', updateWaveform);
-addSyncBehavior('cosMin', 'cos_min_input', updateWaveform);
+// 同期設定 (重複関数を削除し、一元化しました)
+addSyncBehavior('sinMax', 'sin-max-input', updateWaveform);
+addSyncBehavior('sinMin', 'sin-min-input', updateWaveform);
+addSyncBehavior('cosMax', 'cos-max-input', updateWaveform);
+addSyncBehavior('cosMin', 'cos-min-input', updateWaveform);
+
 addSyncBehavior('sinMax', 'sin-max-secondary', updateWaveform);
 addSyncBehavior('sinMin', 'sin-min-secondary', updateWaveform);
 addSyncBehavior('cosMax', 'cos-max-secondary', updateWaveform);
 addSyncBehavior('cosMin', 'cos-min-secondary', updateWaveform);
-addSyncBehavior('sin-max-secondary', 'sin-max_input', updateWaveform);
-addSyncBehavior('sin-min-secondary', 'sin_min_input', updateWaveform);
-addSyncBehavior('cos-max-secondary', 'cos_max_input', updateWaveform);
-addSyncBehavior('cos-min-secondary', 'cos_min_input', updateWaveform);
-addSyncBehavior('sin_acquired_max', 'sin_acquired_max_input', () => {});
-addSyncBehavior('sin_acquired_min', 'sin_acquired_min_input', () => {});
-addSyncBehavior('cos_acquired_max', 'cos_acquired_max_input', () => {});
-addSyncBehavior('cos_acquired_min', 'cos_acquired_min_input', () => {});
+
+addSyncBehavior('sin-max-secondary', 'sin-max-input', updateWaveform);
+addSyncBehavior('sin-min-secondary', 'sin-min-input', updateWaveform);
+addSyncBehavior('cos-max-secondary', 'cos-max-input', updateWaveform);
+addSyncBehavior('cos-min-secondary', 'cos-min-input', updateWaveform);
+
 
 // ==== Canvasドラッグ対応 ====
 let draggingTarget = null;
-
 
 // ■ マウス/タッチの押下でドラッグ対象を決定
 canvas.addEventListener("mousedown", (e) => {
@@ -347,21 +346,25 @@ canvas.addEventListener("mousemove", (e) => {
         cosMax = center + half;
         cosMin = center - half;
         break;
-  }
+      }
     }
     document.getElementById("sinMax").value = sinMax;
     document.getElementById("sinMin").value = sinMin;
     document.getElementById("cosMax").value = cosMax;
     document.getElementById("cosMin").value = cosMin;
 
-    document.getElementById("sin_max_input").value = sinMax;
-    document.getElementById("sin_min_input").value = sinMin;
-    document.getElementById("cos_max_input").value = cosMax;
-    document.getElementById("cos_min_input").value = cosMin;
+    document.getElementById("sin-max-input").value = sinMax;
+    document.getElementById("sin-min-input").value = sinMin;
+    document.getElementById("cos-max-input").value = cosMax;
+    document.getElementById("cos-min-input").value = cosMin;
+
+    document.getElementById("sin-max-secondary").value = sinMax;
+    document.getElementById("sin-min-secondary").value = sinMin;
+    document.getElementById("cos-max-secondary").value = cosMax;
+    document.getElementById("cos-min-secondary").value = cosMin;
 
     updateWaveform();
   } else {
-
     const candidates = [
       { key: "sinMax", val: sinMax },
       { key: "sinMin", val: sinMin },
@@ -440,10 +443,16 @@ canvas.addEventListener("touchmove", (e) => {
   document.getElementById("sinMin").value = sinMin;
   document.getElementById("cosMax").value = cosMax;
   document.getElementById("cosMin").value = cosMin;
-  document.getElementById("sin-max_input").value = sinMax;
-  document.getElementById("sin-min_input").value = sinMin;
-  document.getElementById("cos-max_input").value = cosMax;
-  document.getElementById("cos-min_input").value = cosMin;
+  
+  document.getElementById("sin-max-input").value = sinMax;
+  document.getElementById("sin-min-input").value = sinMin;
+  document.getElementById("cos-max-input").value = cosMax;
+  document.getElementById("cos-min-input").value = cosMin;
+
+  document.getElementById("sin-max-secondary").value = sinMax;
+  document.getElementById("sin-min-secondary").value = sinMin;
+  document.getElementById("cos-max-secondary").value = cosMax;
+  document.getElementById("cos-min-secondary").value = cosMin;
 
   updateWaveform();
   e.preventDefault();
@@ -453,28 +462,3 @@ canvas.addEventListener("touchmove", (e) => {
 canvas.addEventListener("touchend", () => {
   draggingTarget = null;
 });
-
-// ■ スライダーと数値入力を同期
-function syncSliderWithInput(sliderId, inputId) {
-    const slider = document.getElementById(sliderId);
-    const input = document.getElementById(inputId);
-    
-    slider.addEventListener('input', function() {
-        input.value = slider.value;
-        updateWaveform();
-    });
-
-    input.addEventListener('input', function() {
-        slider.value = input.value;
-        updateWaveform()
-    });
-}
-
-syncSliderWithInput('sinMax', 'sin-max-secondary');
-syncSliderWithInput('sinMin', 'sin-min-secondary');
-syncSliderWithInput('cosMax', 'cos-max-secondary');
-syncSliderWithInput('cosMin', 'cos-min-secondary');
-syncSliderWithInput('sinMax', 'sin-max_input');
-syncSliderWithInput('sinMin', 'sin-min_input');
-syncSliderWithInput('cosMax', 'cos-max_input');
-syncSliderWithInput('cosMin', 'cos-min_input');

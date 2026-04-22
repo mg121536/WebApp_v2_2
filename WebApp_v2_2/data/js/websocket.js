@@ -1,59 +1,55 @@
 // websocket.js
 
 let ws;
-const WS_MAX_SMOOTH_LEN = 5;
-const ws_smoothBuffer = { A: [], B: [], C: [], D: [] };
 
 // ■ WebSocket接続・通信開始
 window.startWifi = function startWifi() 
 {
     /* [LOG_TRACE] */
-    tracelog();
+    // tracelog();
 
     if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING)
     {
         log('info', "WebSocket 接続開始");
   
-        ws = new WebSocket('ws://192.168.4.1:81');
+        ws = new WebSocket(`ws://${window.location.hostname}:81`);
         ws.binaryType = "arraybuffer";
   
-        ws.onopen = () => 
-        {
-            log('info', "WebSocket 接続成功");
-        };
+        ws.onopen = () => {};
   
         ws.onmessage = (event) => 
         {
             if (event.data instanceof ArrayBuffer) 
             {
                 const view = new DataView(event.data);
-
-                // 波形・角度データ(Sin・Cos・SinN・CosN)
-                const A_raw  = view.getUint16(0, false);
-                const B_raw  = view.getUint16(2, false);
-                const C_raw  = view.getUint16(4, false);
-                const D_raw  = view.getUint16(6, false);
-                const angle = readFloat32(view, 8, true);
-
-                const A = smooth(A_raw, 'A');
-                const B = smooth(B_raw, 'B');
-                const C = smooth(C_raw, 'C');
-                const D = smooth(D_raw, 'D');
-
-                if (A === null || B === null || C === null || D === null) return;
-                //resizeCanvas();
-                // 描画更新
-                updateActiveCanvas(A, B, C, D, angle);
-		        
-                log('info', `WebSocket データ受信(Binary) Sin:${A.toFixed(0)}, 
-                                    Cos:${B.toFixed(0)}, 
-                                    SinN:${C.toFixed(0)}, 
-                                    CosN:${D.toFixed(0)}, 
-                                    Angle:${angle.toFixed(1)}°`);
+                const POINT_SIZE = 12; 
+                const pointCount = view.byteLength / POINT_SIZE;
+                
+                // ★改善: ループの外で1回だけアクティブタブを取得し、無駄な処理を減らす
                 const activeTab = getActiveTab();
-                if (activeTab === 'console') 
-                {
-                    customLog(
+
+                for (let i = 0; i < pointCount; i++) {
+                    const offset = i * POINT_SIZE;
+
+                    // ★改善: readFloat32関数を経由せず、直接読み出す（関数コールコストをゼロに）
+                    const A = view.getUint16(offset + 0, false);
+                    const B = view.getUint16(offset + 2, false);
+                    const C = view.getUint16(offset + 4, false);
+                    const D = view.getUint16(offset + 6, false);
+                    const angle = view.getFloat32(offset + 8, true);
+
+                    if (i < pointCount - 1) {
+                        updateData(A_vals, A);
+                        updateData(B_vals, B);
+                        updateData(C_vals, C);
+                        updateData(D_vals, D);
+                        Angle = angle;
+                    } else {
+                        updateActiveCanvas(A, B, C, D, angle);
+                        
+                        // コンソールタブが開かれている時のみ、文字列結合処理を実行する
+                        if (activeTab === 'console') {
+                            customLog(
                                 'debug',
                                 `Sin=${String(A.toFixed(0)).padStart(5)}  ` +
                                 `Cos=${String(B.toFixed(0)).padStart(5)}  ` +
@@ -61,59 +57,32 @@ window.startWifi = function startWifi()
                                 `CosN=${String(D.toFixed(0)).padStart(5)}  ` +
                                 `Angle=${String(angle.toFixed(1)).padStart(6)}`
                             );
+                        }
+                    }
                 }
-            } 
+            }
             else if (typeof event.data === "string") 
             {
-                log('info', "WebSocket データ受信(string) " + event.data);
                 processData(event.data.trim());
             } 
-            else 
-            {
-                log('warn', "WebSocket 受信データ不正");
-            }
         };
   
-        ws.onerror = (error) => 
-        {
-            log('error', "WebSocket エラー(詳細不明)");
-        };
-  
-        ws.onclose = () => 
-        {
-            log('info', "WebSocket 接続切断");
-        };
+        ws.onerror = (error) => {};
+        ws.onclose = () => {};
     } 
-    else 
+}
+
+// ■ WebSocket切断処理 (STOPボタン用)
+window.stopWifi = function stopWifi() 
+{
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) 
     {
-        log('info', "WebSocket 接続済み");
+        ws.close();
+        console.log("WebSocket 通信を停止しました");
     }
-    //resizeCanvas();
 }
 
-// ■ スムース処理
-function smooth(value, key) 
-{
-    /* [LOG_TRACE] */
-    //tracelog();
-
-    const buf = ws_smoothBuffer[key];
-    buf.push(value);
-    if (buf.length > WS_MAX_SMOOTH_LEN) buf.shift();
-    if (buf.length < WS_MAX_SMOOTH_LEN) return null;
-
-    return buf.reduce((a, b) => a + b, 0) / buf.length;
-}
-
-// ■ floatデータ読み取り処理
-function readFloat32(view, byteOffset, littleEndian = true) 
-{
-    /* [LOG_TRACE] */
-    //tracelog();
-
-    return view.getFloat32(byteOffset, littleEndian);
-}
-
+// ■ テキストデータ読み取り処理 (レガシー対応)
 function processData(data) 
 {
     /* [LOG_TRACE] */
@@ -124,10 +93,9 @@ function processData(data)
     {
         let A_val = parseInt(match[1]);
         let B_val = parseInt(match[2]);
-        let C_val = parseInt(match[3])
-        let D_val = parseInt(match[4])
+        let C_val = parseInt(match[3]);
+        let D_val = parseInt(match[4]);
 
         updateActiveCanvas(A_val, B_val, C_val, D_val, 0);
     } 
 }
-

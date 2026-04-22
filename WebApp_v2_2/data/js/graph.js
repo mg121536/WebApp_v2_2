@@ -2,6 +2,7 @@
 // ctx   : CanvasRenderingContext2D
 // canvas: HTMLCanvasElement
 
+const FONT_FAMILY = '"Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", sans-serif';
 const COLOR_GRID    = 'rgba(255, 255, 255, 0.2)';
 const COLOR_SIN     = 'rgba(255, 0, 0, 1)';
 const COLOR_COS     = 'rgba(0, 0, 255, 1)';
@@ -10,13 +11,20 @@ const COLOR_COSN    = 'rgba(0, 0, 255, 0.7)';
 const COLOR_WHITE   = 'rgba(255, 255, 255, 1)';
 const COLOR_BLACK   = 'rgba(0, 0, 0, 1)';
 const COLOR_RED     = 'rgba(255, 0, 0, 1)';
+
+// --- [設定] 電圧スケール切り替え ---
+// 5.0 : 従来の5.0V表示
+// 3.3 : 3.3V表示
+// const DISPLAY_VOLTAGE_MODE = 3.3;
+const DISPLAY_VOLTAGE_MODE = 3.3;
+
+const VOLTAGE_REF   = DISPLAY_VOLTAGE_MODE;
 const Y_MIN         = 0;
-const Y_MAX         = 5000;
+const Y_MAX         = DISPLAY_VOLTAGE_MODE * 1000; // mV単位
 const Y_MARGIN      = 0;
 const DRAW_Y_MIN    = Y_MIN - (Y_MAX * Y_MARGIN);
 const DRAW_Y_MAX    = Y_MAX + (Y_MAX * Y_MARGIN);
-const DRAW_Y_RANGE  = DRAW_Y_MAX - DRAW_Y_MIN;
-const VOLTAGE_REF   = 5.0;
+
 const maxDataPoints = 100;
 const A_vals = Array(maxDataPoints).fill(0);
 const B_vals = Array(maxDataPoints).fill(0);
@@ -191,6 +199,17 @@ function setActiveTab(mode) {
     G_consoleContainer.style.display = 'none';
     G_settingsView.style.display = 'none';
 
+    const graphOptions = document.getElementById('graphOptions');
+    if (graphOptions) {
+        // 波形を表示するタブ（all または graph）の時だけ表示する
+        if (mode === 'all' || mode === 'graph') {
+            graphOptions.style.display = 'flex'; 
+        } else {
+            // それ以外のタブ（angle, console, settings）では隠す
+            graphOptions.style.display = 'none';
+        }
+    }
+
     if (mode === 'console') {
         G_consoleContainer.style.display = 'block';
         G_TabElements.console.classList.add('active');
@@ -227,7 +246,7 @@ function getResponsiveMargin(canvas) {
     const height = canvas.height;
 
     return {
-        top: Math.max(height * 0.07, 20),
+        top: Math.max(height * 0.09, 40),
         right: Math.max(width * 0.05, 15),
         bottom: Math.max(height * 0.10, 30),
         left: Math.max(width * 0.12, 30)
@@ -261,17 +280,19 @@ function updateData(values, newValue) {
 }
 
 // ■ タイトル描画
-function drawTitle(canvas, ctx, title = "タイトル", width, height, textColor = COLOR_WHITE) {
+function drawTitle(canvas, ctx, title = "タイトル", width, height, textColor = COLOR_WHITE, isGraph = false)  {
     // /* [LOG_TRACE] */  tracelog();
 
-    const fontSize = Math.floor(height * 0.03);
-    ctx.font = `${fontSize}px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", sans-serif`;
+    const fontSize = Math.floor(height * 0.045);
+    ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
     ctx.fillStyle = textColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     const metrics = ctx.measureText(title);
-    const xPos = width / 2;
+    const margin = getResponsiveMargin(canvas);
+
+    const xPos = isGraph ? margin.left + (width - margin.left - margin.right) / 2 : width / 2;
     const yPos = fontSize / 2 + metrics.actualBoundingBoxAscent / 2;
 
     ctx.fillText(title, xPos, yPos);
@@ -301,83 +322,88 @@ function drawAxes(canvas, ctx, lineColor = COLOR_WHITE) {
 // ■ XY軸ラベル描画
 function drawAxisNameLabels(canvas, ctx, xLabel = "X", yLabel = "Y", textColor = COLOR_WHITE) {
     // /* [LOG_TRACE] */  tracelog();
-    const fontSize = Math.floor(canvas.height * 0.04);
+    const fontSize = Math.floor(canvas.height * 0.035);
     const margin = getResponsiveMargin(canvas);
 
-    ctx.font = `${fontSize}px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", sans-serif`;
+    // 先にフォントと色を設定する
+    ctx.font = `${fontSize}px ${FONT_FAMILY}`;
     ctx.fillStyle = textColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // X軸ラベル
-    ctx.fillText(xLabel, canvas.width / 2, canvas.height - margin.bottom + fontSize * 2);
+    // X軸ラベル (グラフエリアの中央に配置)
+    const graphCenterX = margin.left + (canvas.width - margin.left - margin.right) / 2;
+    ctx.fillText(xLabel, graphCenterX, canvas.height - margin.bottom + fontSize * 1);
+
     // Y軸ラベル
     ctx.save();
-    ctx.translate(margin.left - fontSize * 2.8, canvas.height / 2);
+    ctx.translate(margin.left - fontSize * 3.2, canvas.height / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText(yLabel, 0, 0);
     ctx.restore();
 }
 
-// ■ X軸数値ラベル描画
-function drawXAxisLabels(canvas, ctx, steps = 10) {
-    // /* [LOG_TRACE] */  tracelog();
-
-    if (steps <= 0) return;
-
-    const margin = getResponsiveMargin(canvas);
-    const labelAreaWidth = canvas.width - margin.left - margin.right;
-    const stepSize = labelAreaWidth / steps;
-    const axisY = canvas.height - margin.bottom;
-    const fontSize = Math.floor(canvas.height * 0.03);
-
-    ctx.font = `${fontSize}px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"`;
-    ctx.fillStyle = COLOR_WHITE;
-    ctx.textBaseline = "top";
-
-    for (let idx = 0; idx <= steps; idx++) {
-        const label = idx;
-        const x = margin.left + stepSize * idx;
-
-        ctx.textAlign = (idx === 0) ? "left" : (idx === steps) ? "right" : "center";
-        ctx.fillText(label, x, axisY + 8);
-    }
-}
-
-
 // ■ Y軸数値ラベル描画
-function drawYAxisLabels(canvas, ctx) {
-    // /* [LOG_TRACE] */  tracelog();
-
+function drawYAxisLabels(canvas, ctx, isDiff = false) {
     const margin = getResponsiveMargin(canvas);
-    const ySteps = Math.max(5, Math.floor(canvas.height / 50)); 
-    const stepSize = Y_MAX / ySteps;
+    
+    // 電圧モードに応じて分割数と主要目盛りの間隔を変更
+    let ySteps, majorTickStep;
+    if (VOLTAGE_REF <= 3.3) {
+        ySteps = isDiff ? 22 : 11;
+        majorTickStep = 1.1;
+    } else {
+        ySteps = isDiff ? 20 : 10;
+        majorTickStep = 1.0;
+    }
+    
     const graphHeight = canvas.height - margin.top - margin.bottom;
-    const fontSize = Math.floor(canvas.height * 0.03);
+    const fontSize = Math.floor(canvas.height * 0.028);
 
-    ctx.font = `${fontSize}px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"`;
-    ctx.fillStyle = COLOR_WHITE;
+    const maxV = isDiff ? VOLTAGE_REF : VOLTAGE_REF;
+    const minV = isDiff ? -VOLTAGE_REF : 0.0;
+    const vRange = maxV - minV;
+
+    ctx.font = `${fontSize}px ${FONT_FAMILY}`;
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
     for (let idx = 0; idx <= ySteps; idx++) {
-        const rawValue = Y_MAX - (stepSize * idx);
-        const voltage = (rawValue / Y_MAX) * VOLTAGE_REF;
-
+        let voltage = maxV - (vRange / ySteps) * idx;
         const y = margin.top + (graphHeight / ySteps) * idx;
 
-        const label = (idx === 0) 
-            ? voltage.toFixed(1) + " V" 
-            : voltage.toFixed(1) + " ";
+        // 浮動小数点の計算誤差対策
+        if (Math.abs(voltage) < 0.01) voltage = 0.0;
 
-        ctx.fillText(label, margin.left - 20, y);
+        // majorTickStep単位のキリの良い数字か判定
+        const remainder = Math.abs(voltage % majorTickStep);
+        const isMajor = remainder < 0.01 || Math.abs(remainder - majorTickStep) < 0.01;
+
+        // --- 目盛り線（ティックマーク）の描画 ---
+        ctx.beginPath();
+        ctx.strokeStyle = COLOR_WHITE;
+        ctx.lineWidth = isMajor ? 1.5 : 1.0; 
+        
+        ctx.moveTo(margin.left, y);
+        const tickLength = isMajor ? 12 : 6; 
+        ctx.lineTo(margin.left + tickLength, y);
+        ctx.stroke();
+
+        // --- 数値ラベルの描画 ---
+        if (isMajor) {
+            ctx.fillStyle = COLOR_WHITE;
+            let label = voltage.toFixed(1);
+            
+            // Differentialでプラスの値には "+" をつける
+            if (isDiff && voltage > 0) label = "+" + label;
+
+            ctx.fillText(label, margin.left - 15, y);
+        }
     }
 }
 
 // ■ 水平グリッド線描画
-function drawHorizontalGridLines(canvas, ctx, steps = 10) {
-    // /* [LOG_TRACE] */  tracelog();
-
+function drawHorizontalGridLines(canvas, ctx, steps = 10, isDiff = false) {
     if (steps <= 0) return;
 
     const margin = getResponsiveMargin(canvas);
@@ -385,13 +411,26 @@ function drawHorizontalGridLines(canvas, ctx, steps = 10) {
     const endX = canvas.width - margin.right;
     const height = canvas.height - margin.top - margin.bottom;
 
-    ctx.strokeStyle = COLOR_GRID;
-    ctx.lineWidth = 0.5;
+    // Y軸の目盛り分割数にグリッド線を合わせる
+    let drawSteps;
+    if (VOLTAGE_REF <= 3.3) {
+        drawSteps = isDiff ? 22 : 11;
+    } else {
+        drawSteps = isDiff ? 20 : 10;
+    }
 
-    for (let idx = 0; idx <= steps; idx++) {
-        const y = margin.top + (height / steps) * idx + 0.5;
+    for (let idx = 0; idx <= drawSteps; idx++) {
+        const y = margin.top + (height / drawSteps) * idx + 0.5;
 
         ctx.beginPath();
+        if (isDiff && idx === drawSteps / 2) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1.0;
+        } else {
+            ctx.strokeStyle = COLOR_GRID;
+            ctx.lineWidth = 0.5;
+        }
+
         ctx.moveTo(startX, y);
         ctx.lineTo(endX, y);
         ctx.stroke();
@@ -422,7 +461,6 @@ function drawVerticalLines(canvas, ctx, steps = 10) {
     }
 }
 
-
 // ■ 目盛り線・角度ラベル描画
 function drawProtractor(ctx, centerX, centerY, radius, canvas) {
     // /* [LOG_TRACE] */  tracelog();
@@ -435,7 +473,7 @@ function drawProtractor(ctx, centerX, centerY, radius, canvas) {
 
     ctx.strokeStyle = COLOR_WHITE;
     ctx.fillStyle = COLOR_WHITE;
-    ctx.font = `${fontSize }px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"`;
+    ctx.font = `${fontSize}px ${FONT_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -466,7 +504,7 @@ function drawProtractor(ctx, centerX, centerY, radius, canvas) {
 }
 
 // ■ 波形描画
-function drawWave(canvas, ctx, vals, color) {
+function drawWave(canvas, ctx, vals, color, isDiff = false) {
     // /* [LOG_TRACE] */  tracelog();
 
     if (vals.length <= 1) return;
@@ -476,12 +514,17 @@ function drawWave(canvas, ctx, vals, color) {
     const graphHeight = canvas.height - margin.top - margin.bottom;
     const xSpacing = graphWidth / (vals.length - 1);
 
+    // 固定値を Y_MAX に変更
+    const minVal = isDiff ? -Y_MAX : DRAW_Y_MIN;
+    const maxVal = isDiff ?  Y_MAX : DRAW_Y_MAX;
+    const valRange = maxVal - minVal;
+
     ctx.beginPath();
     for (let idx = 0; idx < vals.length; idx++) {
         const val = vals[idx];
 
         const x = margin.left + idx * xSpacing;
-        const y = margin.top + (1 - (val - DRAW_Y_MIN) / DRAW_Y_RANGE) * graphHeight;
+        const y = margin.top + (1 - (val - minVal) / valRange) * graphHeight;
 
         if (idx === 0) {
             ctx.moveTo(x, y);
@@ -494,6 +537,67 @@ function drawWave(canvas, ctx, vals, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.stroke();
+}
+
+// ■ 凡例（レジェンド）描画
+function drawLegend(canvas, ctx, isDiff = false) {
+    // /* [LOG_TRACE] */  tracelog();
+    const margin = getResponsiveMargin(canvas);
+    
+    const fontSize = Math.floor(canvas.height * 0.025); 
+    ctx.font = `${fontSize}px ${FONT_FAMILY}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    const startX = canvas.width - margin.right - 65; 
+    let y = margin.top + 15;
+
+    // チェックボックスの状態を取得
+    const isSinOn  = G_Checkboxes.sin?.checked;
+    const isCosOn  = G_Checkboxes.cos?.checked;
+    const isSinNOn = G_Checkboxes.sinN?.checked;
+    const isCosNOn = G_Checkboxes.cosN?.checked;
+
+    // 差動(isDiff=true)の場合は、正相・逆相の「どちらか」がONならカウントする
+    const itemsCount = isDiff ? 
+        ((isSinOn || isSinNOn ? 1 : 0) + (isCosOn || isCosNOn ? 1 : 0)) :
+        ((isSinOn ? 1 : 0) + (isCosOn ? 1 : 0) + (isSinNOn ? 1 : 0) + (isCosNOn ? 1 : 0));
+    
+    if (itemsCount > 0) {
+        const boxWidth = 100;
+        const boxHeight = (fontSize * 1.5) * itemsCount + 10;
+        ctx.fillStyle = 'rgba(24, 26, 32, 0.75)';
+        ctx.fillRect(startX - 45, y - 15, boxWidth, boxHeight);
+    }
+
+    const drawItem = (label, color, isDashed) => {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5; 
+        if (isDashed) ctx.setLineDash([4, 4]);
+        else ctx.setLineDash([]);
+        
+        ctx.moveTo(startX - 35, y);
+        ctx.lineTo(startX - 10, y);
+        ctx.stroke();
+        
+        ctx.fillStyle = COLOR_WHITE;
+        ctx.fillText(label, startX, y);
+        y += fontSize * 1.5;
+    };
+
+    if (isDiff) {
+        // VSin, VCos はどちらかがONなら表示する
+        if (isSinOn || isSinNOn) drawItem("VSin", COLOR_SIN, false);
+        if (isCosOn || isCosNOn) drawItem("VCos", COLOR_COS, false);
+    } else {
+        if (isSinOn) drawItem("Sin", COLOR_SIN, false);
+        if (isCosOn) drawItem("Cos", COLOR_COS, false);
+        if (isSinNOn) drawItem("SinN", COLOR_SINN, true);
+        if (isCosNOn) drawItem("CosN", COLOR_COSN, true);
+    }
+    
+    ctx.setLineDash([]); // 点線設定をリセット
 }
 
 // ■ 角度描画
@@ -514,7 +618,7 @@ function drawAngle(canvas, ctx, width, height, angle) {
     const arcLineWidth = baseSize * 0.012;
     const fontSize = Math.floor(height * 0.05);
 
-    ctx.clearRect(0, 0, width, height);
+    // ctx.clearRect(0, 0, width, height);
 
     // 円（外枠）
     ctx.beginPath();
@@ -522,6 +626,12 @@ function drawAngle(canvas, ctx, width, height, angle) {
     ctx.lineWidth = arcLineWidth;
     ctx.strokeStyle = COLOR_BLACK;
     ctx.stroke();
+
+    // 針の根元にピボット（中心の丸）を描画
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, baseSize * 0.018, 0, Math.PI * 2);
+    ctx.fillStyle = COLOR_RED;
+    ctx.fill();
 
     // 分度器（目盛りと角度ラベル）
     drawProtractor(ctx, centerX, centerY, radius, canvas);
@@ -539,7 +649,7 @@ function drawAngle(canvas, ctx, width, height, angle) {
     ctx.stroke();
 
     // 角度ラベル
-    ctx.font = `${fontSize}px "Noto Sans JP", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"`;
+    ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 1.5;
@@ -579,16 +689,36 @@ window.updateActiveCanvas = function updateActiveCanvas(A_val, B_val, C_val, D_v
     }
 }
 
-// ■ 波形描画更新
+// ■ 波形描画更新 (Graphタブ: 差動信号用)
 window.updateGraph = function updateGraph(A_val, B_val, C_val, D_val) {
     // /* [LOG_TRACE] */  tracelog();
 
     if (!isPageVisible) return;
 
+    // 履歴データの更新
     updateData(A_vals, A_val);
     updateData(B_vals, B_val);
     updateData(C_vals, C_val);
     updateData(D_vals, D_val);
+
+    // チェックボックスの状態を取得
+    const isSinOn  = G_Checkboxes.sin?.checked;
+    const isCosOn  = G_Checkboxes.cos?.checked;
+    const isSinNOn = G_Checkboxes.sinN?.checked;
+    const isCosNOn = G_Checkboxes.cosN?.checked;
+
+    // 差動信号の計算（OFFになっている要素は 0 として扱う）
+    const VSin_vals = B_vals.map((sinVal, i) => {
+        const s  = isSinOn  ? sinVal : 0;
+        const sn = isSinNOn ? D_vals[i] : 0;
+        return s - sn; // (Sin) - (SinN)
+    });
+
+    const VCos_vals = A_vals.map((cosVal, i) => {
+        const c  = isCosOn  ? cosVal : 0;
+        const cn = isCosNOn ? C_vals[i] : 0;
+        return c - cn; // (Cos) - (CosN)
+    });
 
     const canvas = G_Canvases.graph;
     const ctx = G_Contexts.graph;
@@ -601,20 +731,19 @@ window.updateGraph = function updateGraph(A_val, B_val, C_val, D_val) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
 
-    drawTitle(offCanvas, offCtx, 'Sin・Cos・SinN・CosN', offCanvas.width, offCanvas.height);
+    drawTitle(offCanvas, offCtx, 'Differential Signal (VSin, VCos)', offCanvas.width, offCanvas.height, COLOR_WHITE, true);
     drawAxes(offCanvas, offCtx);
-    drawYAxisLabels(offCanvas, offCtx);
-    drawXAxisLabels(offCanvas, offCtx);
-    drawAxisNameLabels(offCanvas, offCtx, "Time", "Voltage(V)", COLOR_WHITE);
-    drawHorizontalGridLines(offCanvas, offCtx);
+    
+    drawYAxisLabels(offCanvas, offCtx, true); 
+    drawAxisNameLabels(offCanvas, offCtx, "Time →", "Voltage (V)", COLOR_WHITE);
+    drawHorizontalGridLines(offCanvas, offCtx, 10, true);
     drawVerticalLines(offCanvas, offCtx);
 
-    if (G_Checkboxes.sin?.checked)  drawWave(offCanvas, offCtx, B_vals, COLOR_SIN);
-    if (G_Checkboxes.cos?.checked)  drawWave(offCanvas, offCtx, A_vals, COLOR_COS);
-    offCtx.setLineDash([5, 5]);
-    if (G_Checkboxes.sinN?.checked) drawWave(offCanvas, offCtx, D_vals, COLOR_SINN);
-    if (G_Checkboxes.cosN?.checked) drawWave(offCanvas, offCtx, C_vals, COLOR_COSN);
-    offCtx.setLineDash([]);
+    // 正相・逆相の「どちらか」がONであれば波形を描画する
+    if (isSinOn || isSinNOn)  drawWave(offCanvas, offCtx, VSin_vals, COLOR_SIN, true);
+    if (isCosOn || isCosNOn)  drawWave(offCanvas, offCtx, VCos_vals, COLOR_COS, true);
+    
+    drawLegend(offCanvas, offCtx, true);
 
     ctx.drawImage(offCanvas, 0, 0);
 };
@@ -673,11 +802,10 @@ window.updateWaveAndAngle = function updateWaveAndAngle(A_val, B_val, C_val, D_v
     leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
     rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 
-    drawTitle(leftCanvas, leftCtx, 'Sin・Cos・SinN・CosN', leftWidth, canvas.height);
+    drawTitle(leftCanvas, leftCtx, 'Single-ended Signal (sin, cos, sinN, cosN)', leftWidth, canvas.height, COLOR_WHITE, true);
     drawAxes(leftCanvas, leftCtx);
     drawYAxisLabels(leftCanvas, leftCtx);
-    drawXAxisLabels(leftCanvas, leftCtx);
-    drawAxisNameLabels(leftCanvas, leftCtx, "Time", "Voltage(V)", COLOR_WHITE);
+    drawAxisNameLabels(leftCanvas, leftCtx, "Time →", "Voltage (V)", COLOR_WHITE);
     drawHorizontalGridLines(leftCanvas, leftCtx);
     drawVerticalLines(leftCanvas, leftCtx);
 
@@ -687,6 +815,7 @@ window.updateWaveAndAngle = function updateWaveAndAngle(A_val, B_val, C_val, D_v
     if (G_Checkboxes.cosN?.checked)  drawWave(leftCanvas, leftCtx, C_vals, COLOR_COSN);
     if (G_Checkboxes.sinN?.checked)  drawWave(leftCanvas, leftCtx, D_vals, COLOR_SINN);
     leftCtx.setLineDash([]);
+    drawLegend(leftCanvas, leftCtx, false);
 
     ctx.drawImage(leftCanvas, 0, 0);
 

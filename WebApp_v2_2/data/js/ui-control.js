@@ -20,8 +20,33 @@ document.addEventListener('DOMContentLoaded', () =>
     {
         window.openSettings();
     });
-    // キーボードフォーカス時のスタイルを明示的に管理したい場合はここに追記可能
+    
+    // ★ 追加：起動時にURLのIPアドレスを見て製品を自動判定・設定する
+    autoDetectProductByIP();
+    
+    // START/STOPボタン初期化
+    initStartButton();
 });
+
+// ■ ★ 新規追加：IPアドレスによる自動判定機能
+function autoDetectProductByIP() {
+    const currentIP = window.location.hostname;
+    const productSelect = document.getElementById("product");
+    
+    // 判定ロジック (IPS_Wifi.h で設定したIPに合わせてください)
+    // 192.168.10.x なら IPS、192.168.20.x なら VIR とする例
+    if (currentIP.includes("192.168.10.")) {
+        productSelect.value = "IPS2550";
+    } else if (currentIP.includes("192.168.20.")) {
+        productSelect.value = "RAA2P3500";
+    } else {
+        // どちらでもない場合（テスト環境など）はデフォルトのまま
+    }
+    
+    // 判定結果をもとに画面のタイトル等を更新
+    updateApplication();
+}
+
 
 // ■ 設定モーダル操作
 function openSettings() 
@@ -46,7 +71,7 @@ function updateApplication()
         h1Element.textContent = "VIRアプリケーション";
         enableABZDisplay(true);
     } 
-    else 
+    else // "IPS2550" または デフォルト
     {
         titleElement.textContent = "IPSアプリケーション";
         h1Element.textContent = "IPSアプリケーション";
@@ -97,8 +122,10 @@ function initStartButton()
     // /* [LOG_TRACE] */  tracelog();
 
     button = document.getElementById('control_start');
-    button.textContent = "START";
-    button.style.backgroundColor = "green";
+    if (button) { // DOMが存在するかチェック
+        button.textContent = "START";
+        button.style.backgroundColor = "green";
+    }
 }
 
 // ■ START/STOPボタン切替
@@ -120,5 +147,3 @@ function toggleStartButton()
     }
     isWifiOn = !isWifiOn;
 }
-
-window.addEventListener('DOMContentLoaded', initStartButton);
