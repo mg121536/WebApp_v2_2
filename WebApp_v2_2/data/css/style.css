@@ -261,12 +261,17 @@ canvas {
     flex: 1 1 0%;
 }
 
-#consoleContainer.active,
 #settings-view.active {
     display: flex;
     flex: 0 1 auto;
-
     margin-top: auto; 
+    margin-bottom: auto;
+}
+
+#consoleContainer.active {
+    display: flex;
+    flex: 0 1 auto;
+    margin-top: 0rem;
     margin-bottom: auto;
 }
 
@@ -322,7 +327,7 @@ canvas {
 
     margin: 0 auto;
 
-    padding: 2vw;
+    padding: 1rem 2vw 2vw 2vw; 
 
     border-radius: var(--radius);
 
@@ -332,7 +337,11 @@ canvas {
 }
 
 #consoleContainer .console-title {
+    margin-top: 0; 
     margin-bottom: 0.5rem;
+    
+    /* 追加: 左寄せを安定させる */
+    width: 100%; 
 
     color: var(--color-primary);
     font-size: 1.3rem;
@@ -342,8 +351,7 @@ canvas {
     overflow-y: auto;
 
     width: 100%;
-    min-height: 8rem;
-    max-height: 60vh;
+    height: 65vh;
 
     padding: 1rem;
 
@@ -354,6 +362,22 @@ canvas {
     color: #fff;
     font-family: 'Fira Mono', 'Consolas', monospace;
     font-size: 1rem;
+}
+
+/* --- コンソールのスクロールバーのダーク化 --- */
+#consoleContainer .log-box::-webkit-scrollbar {
+    width: 10px;
+}
+#consoleContainer .log-box::-webkit-scrollbar-track {
+    background: #181a20; /* ログ画面の背景色と同じ */
+    border-radius: 5px;
+}
+#consoleContainer .log-box::-webkit-scrollbar-thumb {
+    background: #31343c; /* 枠線などと同じ落ち着いたグレー */
+    border-radius: 5px;
+}
+#consoleContainer .log-box::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary); /* マウスオーバーで青く光る */
 }
 
 /* --- Settings --- */
@@ -1025,3 +1049,145 @@ footer {
     }
 }
 
+/* ===========================================
+   Calibration View - 横画面(Landscape) 1画面最適化
+   =========================================== */
+@media (orientation: landscape) and (min-width: 800px) {
+    /* 画面全体に収めるためのコンテナ調整 */
+    #settings-view {
+        padding: 1.5vh 2vw;
+        max-height: 88vh; /* 画面高さに収める */
+        overflow: hidden; /* スクロールバーを消す */
+    }
+    
+    #calibration-container {
+        flex-wrap: nowrap; /* 左右パネルを強制的に1行に並べる */
+        gap: 1.5vw;
+        align-items: stretch;
+        height: 100%;
+    }
+
+    /* --- 左パネル（スライダー ＆ キャンバス） --- */
+    .calibration-graph {
+        flex: 1.2; /* 右パネルより少しだけ広め */
+        display: flex;         /* GridをやめてFlexの縦並びに変更 */
+        flex-direction: column;
+        gap: 0.5rem;           /* 各要素間の隙間 */
+        padding: 1rem;
+        margin: 0;
+        height: 100%;
+    }
+
+    .calibration-graph h2 { 
+        margin-top: 0;
+        margin-bottom: 0; 
+        line-height: 1.2;
+        flex-shrink: 0;
+    }
+    
+    .calibration-graph fieldset {
+        margin: 0;
+        padding: 0.5rem 0.8rem;
+        flex-shrink: 0; /* スライダー部分は潰さない */
+    }
+
+    /* キャンバス領域 */
+    .calibration-graph fieldset:nth-of-type(3) { 
+        flex: 1; /* 余った高さをキャンバスに割り当てる */
+        display: flex; 
+        flex-direction: column;
+        min-height: 0; /* Flexboxのはみ出し防止 */
+    }
+    .canvas-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+    }
+    #waveform-canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* アスペクト比を保ったまま枠に収める */
+    }
+
+    /* スライダー周りの余白圧縮（コンパクト化） */
+    .slider-control { margin-bottom: 0.2rem; }
+    .slider-control label { margin-bottom: 0.1rem; }
+    .slider-wrapper input[type="range"] { margin: 0.1rem 0; }
+    .slider-wrapper .slider-label-minmax { font-size: 0.75rem; }
+    .calibration-slider-group .slider-group {
+        display: flex;
+        gap: 1rem; /* MaxとMinを横並びにする（もし狭ければFlexをやめて縦並びでも可） */
+    }
+    .calibration-slider-group .slider-control {
+        flex: 1;
+    }
+
+
+    /* --- 右パネル（設定入力） --- */
+    .settings-panel {
+        flex: 1;
+        padding: 1rem;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        height: 100%;
+    }
+
+    /* 右パネルの一番上に、左の<h2>と全く同じ高さの透明なブロックを入れる */
+    .settings-panel::before {
+        content: "\00a0"; /* 空白文字 */
+        display: block;
+        font-size: 1.3rem; /* h2と同じフォントサイズ */
+        line-height: 1.2;  /* h2と同じ行間 */
+        visibility: hidden; /* 透明にして見えなくする */
+        margin-bottom: 0;
+    }
+    
+    fieldset { padding: 0.5rem 0.8rem; }
+    legend { margin-bottom: 0.2rem; font-size: 1.1rem; }
+
+    /* 入力項目をコンパクトな2列表示にする */
+    .input-settings-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2列 */
+        gap: 0.3rem 0.8rem;
+        margin: 0;
+    }
+
+    .input-settings-group legend { grid-column: 1 / -1; }
+    .section.axis-double-angle { grid-column: 1 / -1; margin-bottom: 0; }
+
+    .input-row {
+        margin-bottom: 0;
+        gap: 0.3rem;
+    }
+    .input-row label {
+        min-width: auto;
+        font-size: 0.85rem;
+    }
+    
+    /* 入力フォームのサイズダウン */
+    .settings-panel input[type="number"], 
+    .settings-panel select {
+        width: 4.5rem;
+        min-width: 4.5rem;
+        max-width: 4.5rem;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.9rem;
+    }
+    .unit { font-size: 0.8rem; }
+
+    /* ボタンエリアを最下部に押し込む */
+    .settings-buttons {
+        margin-top: auto;
+        padding-top: 0.5rem;
+        gap: 0.5rem;
+    }
+    .settings-buttons button {
+        padding: 0.5rem 1rem;
+        font-size: 0.95rem;
+    }
+}
